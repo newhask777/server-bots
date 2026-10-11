@@ -9,19 +9,15 @@ import signal as trigger
 import sys
 import os
 
-
-
 # Bybit api tokens
-API_KEY = 'gUb7OX9uDyiHyMDhbX'
-API_SECRET = '1beu0vlcI28RmZWFObhZwEDIY9Hh4eQuDE6O'
-
+API_KEY = 'zXhDcOWNVq26WchFyX'
+API_SECRET = '6G0junTz5PbXtkZik68nmlfzVDiCAJp1oBvj'
 
 # Telegram api tokens
-TELEGRAM_BOT_TOKEN = '8968569374:AAGW76iTBj-dcA6hmQ3EgkO5pwbExNAuijA'  # Получите у @BotFather
-TELEGRAM_CHAT_ID = '5650732610'      # Получите у @userinfobot
+TELEGRAM_BOT_TOKEN = '8968569374:AAGW76iTBj-dcA6hmQ3EgkO5pwbExNAuijA'
+TELEGRAM_CHAT_ID = '5650732610'
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
-
 
 # Start HTTP session
 session = HTTP(
@@ -29,12 +25,11 @@ session = HTTP(
     api_secret=API_SECRET
 )
 
-
 # Possition settings params
 symbol = 'DOGEUSDT'
 timeframe = 60
-qty = 250
-min_macd_dif = 0.0002
+qty = 400
+min_macd_dif = 0.0005
 position = None
 status = None
 
@@ -47,7 +42,6 @@ def get_historical_data():
         limit=200
     )
     
-    # Проверка наличия данных
     if not resp or 'result' not in resp or 'list' not in resp['result']:
         print("Error: No data received from API")
         return None
@@ -56,13 +50,10 @@ def get_historical_data():
         'timestamp', 'open', 'high', 'low', 'close', 'volume', 'turnover'
     ])
     
-    # Конвертация типов данных
-    df = df[::-1]  # Реверс порядка данных (старые -> новые)
+    df = df[::-1]
     df['timestamp'] = pd.to_datetime(df['timestamp'].astype(int), unit='ms')
     df['close'] = df['close'].astype(float)
     return df
-
-
 
 def get_historical_data_4h():
     """Получение и обработка исторических данных"""
@@ -73,7 +64,6 @@ def get_historical_data_4h():
         limit=200
     )
     
-    # Проверка наличия данных
     if not resp or 'result' not in resp or 'list' not in resp['result']:
         print("Error: No data received from API")
         return None
@@ -82,12 +72,10 @@ def get_historical_data_4h():
         'timestamp', 'open', 'high', 'low', 'close', 'volume', 'turnover'
     ])
     
-    # Конвертация типов данных
-    df = df[::-1]  # Реверс порядка данных (старые -> новые)
+    df = df[::-1]
     df['timestamp'] = pd.to_datetime(df['timestamp'].astype(int), unit='ms')
     df['close'] = df['close'].astype(float)
     return df
-
 
 def get_current_position():
     """Получение текущей позиции с биржи"""
@@ -105,10 +93,8 @@ def get_current_position():
         print(f"Position check error: {str(e)}")
         return None
 
-
 def get_unrealized_pnl_percentage():
     try:
-        # Получаем список позиций для линейного рынка (USDT-фьючерсы)
         response = session.get_positions(category="linear", symbol=symbol, settleCoin="USDT")
         
         if response["retCode"] != 0:
@@ -119,23 +105,15 @@ def get_unrealized_pnl_percentage():
             print("Нет открытых позиций.")
             return
         
-        # with open('position.json', 'w', encoding='utf-8')as f:
-        #     json.dump(positions,f, indent=4, ensure_ascii=False)
-
-        # Обрабатываем каждую позицию
         for pos in positions:
             size = float(pos["size"])
-            
-            # Пропускаем закрытые позиции
             if size == 0:
                 continue
             
-            # Извлекаем данные из ответа
             unrealized_pnl = float(pos["unrealisedPnl"])
             avg_entry_price = float(pos["avgPrice"])
             position_value = float(pos["positionValue"])
             
-            # Рассчитываем PnL в процентах
             if position_value > 0:
                 pnl_percent = (unrealized_pnl / position_value) * 1000
             else:
@@ -151,16 +129,8 @@ def get_unrealized_pnl_percentage():
     except Exception as e:
         print(f"Ошибка: {e}")
 
-
 def execute_trade(signal):
-    """Исполнение торгового сигнала"""
     global position, last_trade_time
-    
-    # current_time = time.time()
-    # if last_trade_time and (current_time - last_trade_time) < TRADE_COOLDOWN:
-    #     print("Trade cooldown active")
-    #     return
-    
     try:
         params = {
             "category": "linear",
@@ -179,17 +149,12 @@ def execute_trade(signal):
             print(f"{datetime.now()} - SELL {qty} USDT")
             session.place_order(**params, side="Sell")
             position = 'SHORT'
-                      
-        # last_trade_time = current_time
         
     except Exception as e:
         print(f"Trade error: {str(e)}")
 
-
 def close_position(signal):
-    """Закрытие текущей позиции"""
     global position, last_trade_time
-
     try:
         params = {
             "category": "linear",
@@ -203,27 +168,16 @@ def close_position(signal):
         if signal == 'BUY' and position == 'SHORT':
             print(f"{datetime.now()} - CLOSE SHORT {qty} USDT")
             session.place_order(**params, side="Buy")
-            #position = None
-            # ---- Добавленный блок перезапуска ----
-            #print("Position closed, restarting bot...")
-            #os.kill(os.getpid(), trigger.SIGINT)   # отправляем сигнал самому себе
 
         elif signal == 'SELL' and position == 'LONG':
             print(f"{datetime.now()} - CLOSE LONG {qty} USDT")
             session.place_order(**params, side="Sell")
-            #position = None
-            # ---- Добавленный блок перезапуска ----
-            #print("Position closed, restarting bot...")
-            #os.kill(os.getpid(), trigger.SIGINT)
 
     except Exception as e:
         print(f"Close position error: {str(e)}")
 
-
 def take_profit(qty):
-    """Закрытие текущей позиции по тейк-профиту"""
     global position
-
     try:
         params = {
             "category": "linear",
@@ -237,26 +191,16 @@ def take_profit(qty):
         if position == 'LONG':
             print(f"{datetime.now()} - TAKE PROFIT {qty} USDT")
             session.place_order(**params, side="Sell")
-            #position = None
-            # ---- Добавленный блок перезапуска ----
-            #print("Take profit executed, restarting bot...")
-            #os.kill(os.getpid(), trigger.SIGINT)
 
         elif position == 'SHORT':
             print(f"{datetime.now()} - TAKE PROFIT {qty} USDT")
             session.place_order(**params, side="Buy")
-            #position = None
-            # ---- Добавленный блок перезапуска ----
-            #print("Take profit executed, restarting bot...")
-            #os.kill(os.getpid(), trigger.SIGINT)
 
     except Exception as e:
         print(f"Close position error: {str(e)}")
 
 def stop_loss():
-    """Закрытие текущей позиции по стоп-лоссу"""
     global position
-
     try:
         params = {
             "category": "linear",
@@ -279,11 +223,11 @@ def stop_loss():
 
     except Exception as e:
         print(f"Stop loss error: {str(e)}")
+
 """
 MACD
 """
 def calculate_macd(df):
-    """Расчет MACD индикатора"""
     if df is None or len(df) < 50:
         print("Not enough data for MACD calculation")
         return None
@@ -292,13 +236,10 @@ def calculate_macd(df):
     df['EMA26'] = df['close'].ewm(span=26, adjust=False).mean()
     df['MACD'] = df['EMA12'] - df['EMA26']
     df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
-
-
     return df
 
 def check_crossover(df):
     global min_macd_dif
-    """Проверка пересечения MACD и Signal линии с учетом положения гистограммы"""
     if df is None or len(df) < 3:
         return False, False
     
@@ -310,8 +251,6 @@ def check_crossover(df):
     current_signal = df['Signal'].iloc[-1]
 
     hist = current_macd - current_signal
-    
-    # Определяем положение гистограммы
     hist_above_zero = hist >= 0
     hist_under_zero = hist <= 0
 
@@ -321,46 +260,30 @@ def check_crossover(df):
     print(under_zero)
     
     if above_zero:
-        # Проверка пересечения вверх
         crossover = (
-            prev_macd < prev_signal and 
+            #prev_macd < prev_signal and 
             current_macd > current_signal and
-            (current_macd - current_signal) >= min_macd_dif #and
-            #mid_macd > mid_signal  # Подтверждение в средней точке
+            (current_macd - current_signal) >= min_macd_dif
         )
-
-
         crossunder = (
-            prev_macd > prev_signal and 
+            #prev_macd > prev_signal and 
             current_macd < current_signal and
-            (current_signal - current_macd) >= min_macd_dif ##and
-            #mid_macd < mid_signal  # Подтверждение в средней точке
+            (current_signal - current_macd) >= min_macd_dif
         )
-
         print('above')
-        
-
-    # Проверка пересечения вниз
     elif under_zero:
-
         min_macd_dif = -min_macd_dif
-
         crossover = (
-            prev_macd < prev_signal and 
+            #prev_macd < prev_signal and 
             current_macd > current_signal and
-            (current_macd - current_signal) >= min_macd_dif #and
-            #mid_macd > mid_signal  # Подтверждение в средней точке
+            (current_macd - current_signal) >= min_macd_dif
         )
-
         crossunder = (
-            prev_macd > prev_signal and 
+            #prev_macd > prev_signal and 
             current_macd < current_signal and
-            (current_signal - current_macd) >= min_macd_dif #and
-            #mid_macd < mid_signal  # Подтверждение в средней точке
+            (current_signal - current_macd) >= min_macd_dif
         )
-
         print('under')
-
     else:
         crossover = None
         crossunder = None
@@ -371,7 +294,6 @@ def check_crossover(df):
 RSI
 """
 def calculate_rsi_2(prices, period=14):
-    """Расчет RSI"""
     deltas = np.diff(prices)
     seed = deltas[:period]
     
@@ -383,7 +305,6 @@ def calculate_rsi_2(prices, period=14):
     
     for i in range(period, len(prices)):
         delta = deltas[i-1]
-        
         if delta > 0:
             upval = delta
             downval = 0.
@@ -402,7 +323,6 @@ def calculate_rsi_2(prices, period=14):
 Stoch RSI
 """
 def calculate_stoch_rsi(rsi, k_period=3, d_period=3, stoch_period=14):
-    """Расчет Stochastic RSI"""
     stoch_rsi = np.zeros_like(rsi)
     stoch_k = np.zeros_like(rsi)
     stoch_d = np.zeros_like(rsi)
@@ -410,21 +330,17 @@ def calculate_stoch_rsi(rsi, k_period=3, d_period=3, stoch_period=14):
     for i in range(stoch_period, len(rsi)):
         rsi_window = rsi[i-stoch_period+1:i+1]
         current_rsi = rsi[i]
-        
-        # Расчет %K Stochastic RSI
         lowest_low = np.min(rsi_window)
         highest_high = np.max(rsi_window)
         
         if highest_high - lowest_low != 0:
             stoch_rsi[i] = (current_rsi - lowest_low) / (highest_high - lowest_low) * 100
         else:
-            stoch_rsi[i] = 50  # Нейтральное значение при отсутствии движения
+            stoch_rsi[i] = 50
     
-    # Сглаживание %K (быстрая линия)
     for i in range(k_period-1, len(stoch_rsi)):
         stoch_k[i] = np.mean(stoch_rsi[i-k_period+1:i+1])
     
-    # Сглаживание %D (медленная линия) - SMA от %K
     for i in range(k_period + d_period - 2, len(stoch_k)):
         stoch_d[i] = np.mean(stoch_k[i-d_period+1:i+1])
     
@@ -434,36 +350,20 @@ def calculate_stoch_rsi(rsi, k_period=3, d_period=3, stoch_period=14):
 Supertrend
 """
 def calculate_supertrend(high, low, close, lookback=10, multiplier=3):
-    
-    """
-    Рассчитывает индикатор SuperTrend.
-    Вход:
-        high, low, close – массивы цен
-        lookback – период для ATR (по умолчанию 10)
-        multiplier – множитель для ATR (по умолчанию 3)
-    Возвращает:
-        supertrend – значения индикатора
-        uptrend – линия для восходящего тренда (NaN в нисходящем)
-        downtrend – линия для нисходящего тренда (NaN в восходящем)
-    """
-
     high = pd.Series(high).astype(float)
     low = pd.Series(low).astype(float)
     close = pd.Series(close).astype(float)
 
-    # 3.1. Расчёт True Range (TR) и Average True Range (ATR)
     tr1 = high - low
     tr2 = abs(high - close.shift(1))
     tr3 = abs(low - close.shift(1))
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    atr = tr.ewm(span=lookback, adjust=False).mean()  # EMA для ATR
+    atr = tr.ewm(span=lookback, adjust=False).mean()
 
-    # 3.2. Базовые верхняя и нижняя полосы
     hl_avg = (high + low) / 2
     upper_band = hl_avg + multiplier * atr
     lower_band = hl_avg - multiplier * atr
 
-    # 3.3. Финальные полосы (с учётом условий)
     final_upper = pd.Series(index=upper_band.index, dtype=float)
     final_lower = pd.Series(index=lower_band.index, dtype=float)
 
@@ -472,18 +372,15 @@ def calculate_supertrend(high, low, close, lookback=10, multiplier=3):
             final_upper.iloc[i] = upper_band.iloc[i]
             final_lower.iloc[i] = lower_band.iloc[i]
         else:
-            # Условие для финальной верхней полосы
             if (upper_band.iloc[i] < final_upper.iloc[i-1]) or (close.iloc[i-1] > final_upper.iloc[i-1]):
                 final_upper.iloc[i] = upper_band.iloc[i]
             else:
                 final_upper.iloc[i] = final_upper.iloc[i-1]
-            # Условие для финальной нижней полосы
             if (lower_band.iloc[i] > final_lower.iloc[i-1]) or (close.iloc[i-1] < final_lower.iloc[i-1]):
                 final_lower.iloc[i] = lower_band.iloc[i]
             else:
                 final_lower.iloc[i] = final_lower.iloc[i-1]
 
-    # 3.4. Расчёт SuperTrend
     supertrend = pd.Series(index=close.index, dtype=float)
     for i in range(len(supertrend)):
         if i == 0:
@@ -500,7 +397,6 @@ def calculate_supertrend(high, low, close, lookback=10, multiplier=3):
             else:
                 supertrend.iloc[i] = supertrend.iloc[i-1]
 
-    # 3.5. Разделение на восходящий и нисходящий тренды для визуализации
     uptrend = pd.Series(index=supertrend.index, dtype=float)
     downtrend = pd.Series(index=supertrend.index, dtype=float)
     for i in range(len(supertrend)):
@@ -514,28 +410,73 @@ def calculate_supertrend(high, low, close, lookback=10, multiplier=3):
     return supertrend, uptrend, downtrend
 
 """
+Новые функции для определения боковика
+"""
+def is_supertrend_flat(supertrend_series, lookback=10, tolerance=0.0):
+    """Проверяет, был ли Supertrend неизменным последние lookback свечей."""
+    if len(supertrend_series) < lookback:
+        return False
+    window = supertrend_series.iloc[-lookback:]
+    if tolerance == 0.0:
+        return window.nunique() == 1
+    return (window.max() - window.min()) <= tolerance
+
+def is_atr_low(df, atr_period=14, ma_period=20, threshold=0.7):
+    """Проверяет, находится ли ATR ниже своего скользящего среднего на threshold."""
+    high = df['high'].astype(float)
+    low = df['low'].astype(float)
+    close = df['close'].astype(float)
+    tr1 = high - low
+    tr2 = abs(high - close.shift(1))
+    tr3 = abs(low - close.shift(1))
+    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    atr = tr.ewm(span=atr_period, adjust=False).mean()
+    atr_ma = atr.rolling(window=ma_period).mean()
+    if len(atr) < ma_period:
+        return False
+    current_atr = atr.iloc[-1]
+    current_ma = atr_ma.iloc[-1]
+    if pd.isna(current_ma) or current_ma == 0:
+        return False
+    return current_atr < current_ma * threshold
+
+def is_sideways(df, supertrend_series, supertrend_lookback=10, supertrend_tolerance=0.0,
+                atr_period=14, atr_ma_period=20, atr_threshold=0.7,
+                use_supertrend=True, use_atr=True):
+    """Определяет боковик по Supertrend и/или ATR."""
+    flat_st = False
+    low_atr = False
+    if use_supertrend:
+        flat_st = is_supertrend_flat(supertrend_series, supertrend_lookback, supertrend_tolerance)
+    if use_atr:
+        low_atr = is_atr_low(df, atr_period, atr_ma_period, atr_threshold)
+    
+    if use_supertrend and use_atr:
+        return flat_st or low_atr  # если любой из признаков указывает на боковик
+    elif use_supertrend:
+        return flat_st
+    elif use_atr:
+        return low_atr
+    else:
+        return False
+
+"""
 ADX
 """
 def calculate_adx(df, period=14):
-    """Расчет ADX, +DI и -DI"""
     data = df.copy()
-    
-    # Преобразование столбцов в числовой формат
     num_cols = ['high', 'low', 'close']
     data[num_cols] = data[num_cols].apply(pd.to_numeric, errors='coerce')
     
-    # 1. Расчет True Range (TR)
     data['high_prev'] = data['high'].shift(1)
     data['low_prev'] = data['low'].shift(1)
     data['close_prev'] = data['close'].shift(1)
     
-    # Расчет компонентов TR
     data['tr1'] = data['high'] - data['low']
     data['tr2'] = abs(data['high'] - data['close_prev'])
     data['tr3'] = abs(data['low'] - data['close_prev'])
     data['tr'] = data[['tr1', 'tr2', 'tr3']].max(axis=1)
     
-    # 2. Расчет Directional Movement (+DM и -DM)
     data['plus_dm'] = np.where(
         (data['high'] - data['high_prev']) > (data['low_prev'] - data['low']),
         np.maximum(data['high'] - data['high_prev'], 0),
@@ -547,13 +488,10 @@ def calculate_adx(df, period=14):
         0
     )
     
-    # 3. Сглаживание (Wilder Smoothing)
-    # Первые значения - простые средние
     data['smoothed_tr'] = data['tr'].rolling(window=period, min_periods=period).mean()
     data['smoothed_plus_dm'] = data['plus_dm'].rolling(window=period, min_periods=period).mean()
     data['smoothed_minus_dm'] = data['minus_dm'].rolling(window=period, min_periods=period).mean()
     
-    # Рекурсивное сглаживание для последующих значений
     for i in range(period, len(data)):
         prev_idx = data.index[i-1]
         curr_idx = data.index[i]
@@ -570,16 +508,13 @@ def calculate_adx(df, period=14):
             data.at[prev_idx, 'smoothed_minus_dm'] * (period - 1) + data.at[curr_idx, 'minus_dm']
         ) / period
     
-    # 4. Расчет Directional Indicators
     data['plus_di'] = (data['smoothed_plus_dm'] / data['smoothed_tr']) * 100
     data['minus_di'] = (data['smoothed_minus_dm'] / data['smoothed_tr']) * 100
     
-    # 5. Расчет Directional Movement Index (DX)
     di_sum = data['plus_di'] + data['minus_di']
     di_diff = abs(data['plus_di'] - data['minus_di'])
-    data['dx'] = (di_diff / di_sum.replace(0, np.nan)) * 100  # Защита от деления на 0
+    data['dx'] = (di_diff / di_sum.replace(0, np.nan)) * 100
     
-    # 6. Расчет ADX
     data['adx'] = data['dx'].rolling(window=period).mean()
 
     return data.drop([
@@ -593,7 +528,6 @@ def calculate_adx(df, period=14):
 Telegram message
 """
 def send_telegram_alert(rsi):
-    """Отправка текущего состояния в Telegram"""
     try:
         message = (
             f"📊 *Trade Update*\n"
@@ -601,20 +535,17 @@ def send_telegram_alert(rsi):
             f"Symbol: *{symbol}*\n"
             f"Position: `{position}`\n"
             f"MACD Diff: `{min_macd_dif:.6f}`\n"
-            # f"ADX: `{adx:.2f}`"
             f"RSI: `{rsi[-1]}`"
         )
         bot.send_message(TELEGRAM_CHAT_ID, message, parse_mode='Markdown')
     except Exception as e:
         print(f"Telegram send error: {e}")
 
-
 def main_loop():
     global min_macd_dif
     global position
     global status
     
-    # Инициализация позиции
     position = get_current_position()
     print(f"Initial position: {position}")
     
@@ -634,12 +565,7 @@ def main_loop():
                     if pnl == None:
                         pnl = 0.0
 
-                    # adx_df = calculate_adx(df, period=14)
-                    # adx = round(adx_df['adx'].values[-1], 4)
-                    # print(adx_df['adx'].values[-1])
-
                     rsi_2 = calculate_rsi_2(df['close'].values, period=14)
-                    #rsi_2_v = round(rsi_df.values[-1], 2)
                     stoch_rsi, stoch_k, stoch_d = calculate_stoch_rsi(rsi_2)
                     print(stoch_k[-1])
 
@@ -659,72 +585,90 @@ def main_loop():
                     else:
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
-                        # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
 
-                    elif position == 'SHORT' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
-                        # ==========================
+                    # ====== ПРОВЕРКА НА БОКОВИК ======
+                    sideways = is_sideways(
+                        df, df['supertrend'],
+                        supertrend_lookback=10,
+                        supertrend_tolerance=0.0,
+                        atr_period=14,
+                        atr_ma_period=20,
+                        atr_threshold=0.7,
+                        use_supertrend=True,
+                        use_atr=True
+                    )
+                    print(f"Sideways: {sideways}")
+                    # =================================
 
+                    # ====== STOP LOSS 4% ======
+                    # if position == 'LONG' and pnl <= -4.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
+                    # elif position == 'SHORT' and pnl <= -4.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
+                    # ==========================
 
                     # LONG position logic
-                    if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
+                    if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80 and not sideways:
                         close_position('BUY')
                         execute_trade('BUY')
-                        #status = "Long"
                         send_telegram_alert(rsi_2)
                             
                     elif position == 'LONG' and status == None and pnl >= 4.0:
-                        take_profit(qty=220)
+                        take_profit(qty=300)
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                        take_profit(qty=50)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
                         take_profit(qty=30)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 18.0:
+                        take_profit(qty=20)
                         status = None
 
-
-                          
                     # SHORT position logic
-                    elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+                    elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20 and not sideways:
                         close_position('SELL')
                         execute_trade('SELL')
-                        #status = "Short"
                         send_telegram_alert(rsi_2)
                             
                     elif position == 'SHORT' and status == None and pnl >= 4.0:
                         take_profit(qty=220)
                         status = 'FIRST_TAKE_PROFIT'
 
-                    
                     elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                        take_profit(qty=50)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
                         take_profit(qty=30)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 18.0:
+                        take_profit(qty=20)
                         status = None
 
-
-                        
                     # Вывод информации о состоянии
                     print(f"\n{datetime.now()}")
                     print(f"Symbol: {symbol}")
                     print(f"Position: {position}")
                     print(f"Diff: {min_macd_dif}")
-                    # print(f"ADX: {adx}")
-                    #print(f"RSI: {rsi}")
                     print(f"Cупер тренд: {trend}")
                     print(f"UpperTrend: {df['uptrend'].values[-1]}")
                     print(f"DownTrend: {df['downtrend'].values[-1]}")
                     print(f"Stochastick RSI fast: {stoch_k[1]}")
                     print(f"Stochastick RSI slow: {stoch_d[-1]}")
-                    # print(f"EMA 100: {ema_100}")
                     
                     if len(df) > 0:
                         print(f"Last close: {df['close'].iloc[-1]:.5f}")
                         print(f"MACD: {df_4h['MACD'].iloc[-1]:.5f} | Signal: {df_4h['Signal'].iloc[-1]:.5f}")
                         print(f"Middle MACD: {df_4h['MACD'].iloc[-2]:.5f} | Middle Signal: {df_4h['Signal'].iloc[-2]:5f}")
             
-            # Пауза между итерациями
             time.sleep(1)
             
         except KeyboardInterrupt:
@@ -736,7 +680,6 @@ def main_loop():
 
 if __name__ == "__main__":
     try:
-        # Проверка подключения с правильным accountType
         print("Testing connection...")
         balance = session.get_wallet_balance(accountType="UNIFIED")
         print("Balance check successful!")

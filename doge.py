@@ -12,8 +12,8 @@ import os
 
 
 # Bybit api tokens
-API_KEY = 'AF4mEuQ7Cn6FKQuB6t'
-API_SECRET = '5p5vR80mIfNIHi3yNB76DYxBpHD8ZPIKkj8B'
+API_KEY = '4I3fwVkcfK61OAxuWZ'
+API_SECRET = 'BMO7aNrKXOjTRsgEnBNFIiKEcG9xpeAcwlVD'
 
 
 # Telegram api tokens
@@ -33,7 +33,7 @@ session = HTTP(
 # Possition settings params
 symbol = 'DOGEUSDT'
 timeframe = 60
-qty = 250
+qty = 330
 min_macd_dif = 0.0002
 position = None
 status = None
@@ -653,13 +653,13 @@ def main_loop():
                         trend = "Short"
 
                     # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    #if position == 'LONG' and pnl <= -4.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2)
 
-                    elif position == 'SHORT' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    #elif position == 'SHORT' and pnl <= -4.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2)
                     # ==========================
 
                     # LONG position logic
@@ -674,7 +674,15 @@ def main_loop():
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                        take_profit(qty=30)
+                        take_profit(qty=50)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
+                        take_profit(qty=40)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                        take_profit(qty=20)
                         status = None
 
 
@@ -692,7 +700,15 @@ def main_loop():
 
                     
                     elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                        take_profit(qty=30)
+                        take_profit(qty=50)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
+                        take_profit(qty=40)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                        take_profit(qty=20)
                         status = None
 
 

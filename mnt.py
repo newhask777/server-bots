@@ -12,8 +12,8 @@ import os
 
 
 # Bybit api tokens
-API_KEY = 'AF4mEuQ7Cn6FKQuB6t'
-API_SECRET = '5p5vR80mIfNIHi3yNB76DYxBpHD8ZPIKkj8B'
+API_KEY = '4I3fwVkcfK61OAxuWZ'
+API_SECRET = 'BMO7aNrKXOjTRsgEnBNFIiKEcG9xpeAcwlVD'
 
 
 # Telegram api tokens
@@ -33,7 +33,7 @@ session = HTTP(
 # Possition settings params
 symbol = 'MNTUSDT'
 timeframe = 60
-qty = 25
+qty = 42
 min_macd_dif = 0.0002
 position = None
 status = None
@@ -651,13 +651,13 @@ def main_loop():
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
                         # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    #if position == 'LONG' and pnl <= -8.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2)
 
-                    elif position == 'SHORT' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    #elif position == 'SHORT' and pnl <= -8.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2)
                         # ==========================
 
 
@@ -668,12 +668,24 @@ def main_loop():
                         #status = "Long"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'LONG' and status == None and pnl >= 4.0:
+                    elif position == 'LONG' and status == None and pnl >= 5.0:
                         take_profit(qty=20)
                         status = 'FIRST_TAKE_PROFIT'
 
-                    elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                    elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=7)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=6)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
                         take_profit(qty=5)
+                        status = 'FOURTH_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=4)
                         status = None
 
 
@@ -685,13 +697,25 @@ def main_loop():
                         #status = "Short"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'SHORT' and status == None and pnl >= 4.0:
+                    elif position == 'SHORT' and status == None and pnl >= 5.0:
                         take_profit(qty=20)
                         status = 'FIRST_TAKE_PROFIT'
 
                     
-                    elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                    elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=7)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=6)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
                         take_profit(qty=5)
+                        status = 'FOURTH_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=4)
                         status = None
 
 

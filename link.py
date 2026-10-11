@@ -33,7 +33,7 @@ session = HTTP(
 # Possition settings params
 symbol = 'LINKUSDT'
 timeframe = 60
-qty = 1
+qty = 3
 min_macd_dif = 0.0002
 position = None
 status = None
@@ -213,7 +213,7 @@ def close_position(signal):
         print(f"Close position error: {str(e)}")
 
 
-def take_profit():
+def take_profit(qty):
     """Закрытие текущей позиции по тейк-профиту"""
     global position
 
@@ -317,16 +317,11 @@ def check_crossover(df):
     
     if above_zero:
         # Проверка пересечения вверх
-        crossover = (
-            prev_macd < prev_signal and 
-            current_macd > current_signal and
-            (current_macd - current_signal) >= min_macd_dif #and
-            #mid_macd > mid_signal  # Подтверждение в средней точке
-        )
+        crossover = None
 
 
         crossunder = (
-            prev_macd > prev_signal and 
+            #prev_macd > prev_signal and 
             current_macd < current_signal and
             (current_signal - current_macd) >= min_macd_dif ##and
             #mid_macd < mid_signal  # Подтверждение в средней точке
@@ -341,18 +336,13 @@ def check_crossover(df):
         min_macd_dif = -min_macd_dif
 
         crossover = (
-            prev_macd < prev_signal and 
+            #prev_macd < prev_signal and 
             current_macd > current_signal and
             (current_macd - current_signal) >= min_macd_dif #and
             #mid_macd > mid_signal  # Подтверждение в средней точке
         )
 
-        crossunder = (
-            prev_macd > prev_signal and 
-            current_macd < current_signal and
-            (current_signal - current_macd) >= min_macd_dif #and
-            #mid_macd < mid_signal  # Подтверждение в средней точке
-        )
+        crossunder = None
 
         print('under')
 
@@ -658,13 +648,13 @@ def main_loop():
                         trend = "Short"
                         
                     # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -10.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2, "stop loss long")
+                    #if position == 'LONG' and pnl <= -50.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2, "stop loss long")
 
-                    elif position == 'SHORT' and pnl <= -10.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2, "stop loss short")
+                    #elif position == 'SHORT' and pnl <= -50.0:
+                        #stop_loss()
+                        #send_telegram_alert(rsi_2, "stop loss short")
                     # ==========================
 
 
@@ -675,13 +665,25 @@ def main_loop():
                         #status = "Long"
                         send_telegram_alert(rsi_2, "Position Long")
                             
-                    elif position == 'LONG' and status == None and pnl >= 10.0:
-                        take_profit()
+                    elif position == 'LONG' and status == None and pnl >= 5.0:
+                        take_profit(qty=1)
                         status = 'FIRST_TAKE_PROFIT'
 
-                    # elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 7.0:
-                    #     take_profit('SELL', qty=60)
-                    #     status = 'SECOND_TAKE_PROFIT'
+                    elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=0.5)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=0.5)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
+                        take_profit(qty=0.5)
+                        status = 'FOURTH_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=0.5)
+                        status = None
 
 
                           
@@ -692,14 +694,26 @@ def main_loop():
                         #status = "Short"
                         send_telegram_alert(rsi_2, "Position Short")
                             
-                    elif position == 'SHORT' and status == None and pnl >= 10.0:
-                        take_profit()
-                    #   status = 'FIRST_TAKE_PROFIT'
+                    elif position == 'SHORT' and status == None and pnl >= 5.0:
+                        take_profit(qty=1)
+                        status = 'FIRST_TAKE_PROFIT'
 
                     
-                    # elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 7.0:
-                    #     take_profit('BUY', qty=60)
-                    #     status = 'SECOND_TAKE_PROFIT'
+                    elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=0.5)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=0.5)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
+                        take_profit(qty=0.5)
+                        status = 'FOURTH_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=0.5)
+                        status = None
 
 
                         

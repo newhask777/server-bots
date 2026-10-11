@@ -12,8 +12,8 @@ import os
 
 
 # Bybit api tokens
-API_KEY = 'gUb7OX9uDyiHyMDhbX'
-API_SECRET = '1beu0vlcI28RmZWFObhZwEDIY9Hh4eQuDE6O'
+API_KEY = 'zXhDcOWNVq26WchFyX'
+API_SECRET = '6G0junTz5PbXtkZik68nmlfzVDiCAJp1oBvj'
 
 
 # Telegram api tokens
@@ -34,7 +34,7 @@ session = HTTP(
 # Possition settings params
 symbol = 'MNTUSDT'
 timeframe = 60
-qty = 25
+qty = 50
 min_macd_dif = 0.0002
 position = None
 status = None
@@ -324,7 +324,7 @@ def check_crossover(df):
     if above_zero:
         # Проверка пересечения вверх
         crossover = (
-            prev_macd < prev_signal and 
+            #prev_macd < prev_signal and 
             current_macd > current_signal and
             (current_macd - current_signal) >= min_macd_dif #and
             #mid_macd > mid_signal  # Подтверждение в средней точке
@@ -332,7 +332,7 @@ def check_crossover(df):
 
 
         crossunder = (
-            prev_macd > prev_signal and 
+            #prev_macd > prev_signal and 
             current_macd < current_signal and
             (current_signal - current_macd) >= min_macd_dif ##and
             #mid_macd < mid_signal  # Подтверждение в средней точке
@@ -347,14 +347,14 @@ def check_crossover(df):
         min_macd_dif = -min_macd_dif
 
         crossover = (
-            prev_macd < prev_signal and 
+            #prev_macd < prev_signal and 
             current_macd > current_signal and
             (current_macd - current_signal) >= min_macd_dif #and
             #mid_macd > mid_signal  # Подтверждение в средней точке
         )
 
         crossunder = (
-            prev_macd > prev_signal and 
+            #prev_macd > prev_signal and 
             current_macd < current_signal and
             (current_signal - current_macd) >= min_macd_dif #and
             #mid_macd < mid_signal  # Подтверждение в средней точке
@@ -660,14 +660,14 @@ def main_loop():
                     else:
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
-                        # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    # ====== STOP LOSS 4% ======
+                    # if position == 'LONG' and pnl <= -50.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
 
-                    elif position == 'SHORT' and pnl <= -4.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    # elif position == 'SHORT' and pnl <= -50.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
                         # ==========================
 
 
@@ -678,11 +678,31 @@ def main_loop():
                         #status = "Long"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'LONG' and status == None and pnl >= 4.0:
+                    elif position == 'LONG' and status == None and pnl >= 5.0:
                         take_profit(qty=20)
                         status = 'FIRST_TAKE_PROFIT'
 
-                    elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                    elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=5)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=5)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
+                        take_profit(qty=5)
+                        status = 'FOURTH_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=5)
+                        status = 'FIFTH_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'FIFTH_TAKE_PROFIT' and pnl >= 30.0:
+                        take_profit(qty=5)
+                        status = 'SIXS_TAKE_PROFIT'
+
+                    elif position == 'LONG' and status == 'SIXS_TAKE_PROFIT' and pnl >= 35.0:
                         take_profit(qty=5)
                         status = None
 
@@ -695,12 +715,32 @@ def main_loop():
                         #status = "Short"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'SHORT' and status == None and pnl >= 4.0:
+                    elif position == 'SHORT' and status == None and pnl >= 5.0:
                         take_profit(qty=20)
                         status = 'FIRST_TAKE_PROFIT'
 
                     
-                    elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
+                    elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
+                        take_profit(qty=5)
+                        status = 'SECOND_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                        take_profit(qty=5)
+                        status = 'THIRD_TAKE_PROFIT'
+
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
+                        take_profit(qty=5)
+                        status = None
+
+                    elif position == 'SHORT' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
+                        take_profit(qty=5)
+                        status = 'FIFTH_TAKE_PROFIT'
+                    
+                    elif position == 'SHORT' and status == 'FIFTH_TAKE_PROFIT' and pnl >= 30.0:
+                        take_profit(qty=5)
+                        status = 'SIXS_TAKE_PROFIT'
+                    
+                    elif position == 'SHORT' and status == 'SIXS_TAKE_PROFIT' and pnl >= 35.0:
                         take_profit(qty=5)
                         status = None
 

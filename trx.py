@@ -12,8 +12,8 @@ import os
 
 
 # Bybit api tokens
-API_KEY = 'gUb7OX9uDyiHyMDhbX'
-API_SECRET = '1beu0vlcI28RmZWFObhZwEDIY9Hh4eQuDE6O'
+API_KEY = 'zXhDcOWNVq26WchFyX'
+API_SECRET = '6G0junTz5PbXtkZik68nmlfzVDiCAJp1oBvj'
 
 
 # Telegram api tokens
@@ -657,42 +657,42 @@ def main_loop():
 
 
                     # LONG position logic
-                    if crossover and position != 'LONG' and status == None and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
+                    if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
                         close_position('BUY')
                         execute_trade('BUY')
-                        status = "Long"
+                        #status = "Long"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'LONG' and status == "Long" and pnl >= 5.0:
+                    elif position == 'LONG' and status == None and pnl >= 5.0:
                         take_profit(qty=17)
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
                         take_profit(qty=8)
-                        status = None
+                        status = 'SECOND_TAKE_PROFIT'
                         
-                    #elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT'  and pnl >= 15.0:
-                     #   take_profit(qty=3)
-                     #   status = None
+                    elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT'  and pnl >= 15.0:
+                       take_profit(qty=3)
+                       status = None
                           
                     # SHORT position logic
-                    elif crossunder and position != 'SHORT' and status == None and trend == "Short" and stoch_k[-1] < 20:
+                    elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
                         close_position('SELL')
                         execute_trade('SELL')
-                        status = "Short"
+                        #status = "Short"
                         send_telegram_alert(rsi_2)
                             
-                    elif position == 'SHORT' and status == "Short" and pnl >= 5.0:
+                    elif position == 'SHORT' and status == None and pnl >= 5.0:
                         take_profit(qty=17)
                         status = 'FIRST_TAKE_PROFIT'
                         
                     elif position == "LONG" and status == "FIRST_TAKE_PROFIT" and pnl >= 10.0:
                         take_profit(qty=8)
-                        status = None
+                        status = 'SECOND_TAKE_PROFIT'
                     
-                    #elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
-                     #   take_profit(qty=3)
-                     #   status = None
+                    elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
+                       take_profit(qty=3)
+                       status = None
 
 
                         
