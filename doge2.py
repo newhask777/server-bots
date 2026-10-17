@@ -601,12 +601,12 @@ def main_loop():
                     # =================================
 
                     # ====== STOP LOSS 4% ======
-                    # if position == 'LONG' and pnl <= -4.0:
-                    #     stop_loss()
-                    #     send_telegram_alert(rsi_2)
-                    # elif position == 'SHORT' and pnl <= -4.0:
-                    #     stop_loss()
-                    #     send_telegram_alert(rsi_2)
+                    if position == 'LONG' and pnl <= -50.0:
+                        stop_loss()
+                        send_telegram_alert(rsi_2)
+                    elif position == 'SHORT' and pnl <= -50.0:
+                        stop_loss()
+                        send_telegram_alert(rsi_2)
                     # ==========================
 
                     # LONG position logic
@@ -620,15 +620,15 @@ def main_loop():
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                        take_profit(qty=50)
+                        take_profit(qty=70)
                         status = 'SECOND_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                        take_profit(qty=30)
+                        take_profit(qty=20)
                         status = 'THIRD_TAKE_PROFIT'
 
-                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 18.0:
-                        take_profit(qty=20)
+                    elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                        take_profit(qty=10)
                         status = None
 
                     # SHORT position logic
@@ -638,19 +638,19 @@ def main_loop():
                         send_telegram_alert(rsi_2)
                             
                     elif position == 'SHORT' and status == None and pnl >= 4.0:
-                        take_profit(qty=220)
+                        take_profit(qty=300)
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                        take_profit(qty=50)
+                        take_profit(qty=70)
                         status = 'SECOND_TAKE_PROFIT'
 
                     elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                        take_profit(qty=30)
+                        take_profit(qty=20)
                         status = 'THIRD_TAKE_PROFIT'
 
-                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 18.0:
-                        take_profit(qty=20)
+                    elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                        take_profit(qty=10)
                         status = None
 
                     # Вывод информации о состоянии

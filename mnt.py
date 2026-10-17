@@ -650,15 +650,15 @@ def main_loop():
                     else:
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
-                        # ====== STOP LOSS 4% ======
-                    #if position == 'LONG' and pnl <= -8.0:
-                        #stop_loss()
-                        #send_telegram_alert(rsi_2)
+                    # ====== STOP LOSS 4% ======
+                    if position == 'LONG' and pnl <= -25.0:
+                        stop_loss()
+                        send_telegram_alert(rsi_2)
 
-                    #elif position == 'SHORT' and pnl <= -8.0:
-                        #stop_loss()
-                        #send_telegram_alert(rsi_2)
-                        # ==========================
+                    elif position == 'SHORT' and pnl <= -25.0:
+                        stop_loss()
+                        send_telegram_alert(rsi_2)
+                    # ==========================
 
 
                     # LONG position logic
