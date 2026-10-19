@@ -601,12 +601,12 @@ def main_loop():
                     # =================================
 
                     # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -50.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
-                    elif position == 'SHORT' and pnl <= -50.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    # if position == 'LONG' and pnl <= -50.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
+                    # elif position == 'SHORT' and pnl <= -50.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
                     # ==========================
 
                     # LONG position logic

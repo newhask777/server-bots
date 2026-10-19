@@ -361,6 +361,7 @@ def main_loop():
             elif position == 'SHORT' and trend == "Long":
                 close_position('BUY')
                 status = None
+            
 
             # ---- Tiered take profit ----
             elif position == 'LONG' and status is None and pnl >= 4.0:

@@ -663,7 +663,9 @@ def main_loop():
                     # ==========================
 
                     # LONG position logic
-                    if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
+                    #if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
+
+                    if position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
                         close_position('BUY')
                         execute_trade('BUY')
                         #status = "Long"
@@ -688,7 +690,9 @@ def main_loop():
 
                           
                     # SHORT position logic
-                    elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+                    #elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+
+                    elif position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
                         close_position('SELL')
                         execute_trade('SELL')
                         #status = "Short"

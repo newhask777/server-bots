@@ -651,18 +651,20 @@ def main_loop():
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
                     # ====== STOP LOSS 4% ======
-                    if position == 'LONG' and pnl <= -25.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    # if position == 'LONG' and pnl <= -25.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
 
-                    elif position == 'SHORT' and pnl <= -25.0:
-                        stop_loss()
-                        send_telegram_alert(rsi_2)
+                    # elif position == 'SHORT' and pnl <= -25.0:
+                    #     stop_loss()
+                    #     send_telegram_alert(rsi_2)
                     # ==========================
 
 
-                    # LONG position logic
-                    if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
+                    # LONG position logic                    
+                    # if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
+
+                    if position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
                         close_position('BUY')
                         execute_trade('BUY')
                         #status = "Long"
@@ -690,8 +692,10 @@ def main_loop():
 
 
                           
-                    # SHORT position logic
-                    elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+                    # SHORT position logic                    
+                    # elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+
+                    elif position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
                         close_position('SELL')
                         execute_trade('SELL')
                         #status = "Short"
