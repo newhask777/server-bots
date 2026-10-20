@@ -33,7 +33,7 @@ ST_MULTIPLIER = 3
 
 # ADX (фильтр силы тренда)
 ADX_PERIOD = 14
-ADX_THRESHOLD = 25        # Вход только при ADX > 25
+ADX_THRESHOLD = 10        # Вход только при ADX > 25
 
 position = None
 status = None
@@ -288,8 +288,12 @@ def check_bb_breakout(df):
     curr_upper = df['bb_upper'].iloc[-1]
     curr_lower = df['bb_lower'].iloc[-1]
 
-    breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
-    breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
+    #breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
+    breakout_up = curr_close > prev_close
+
+    #breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
+    breakout_down = prev_close > curr_close
+
     return breakout_up, breakout_down
 
 

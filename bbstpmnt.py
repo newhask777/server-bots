@@ -33,7 +33,7 @@ ST_MULTIPLIER = 3
 
 # ADX (фильтр силы тренда)
 ADX_PERIOD = 14
-ADX_THRESHOLD = 25        # Вход только при ADX > 25
+ADX_THRESHOLD = 10        # Вход только при ADX > 25
 
 position = None
 status = None
@@ -288,8 +288,11 @@ def check_bb_breakout(df):
     curr_upper = df['bb_upper'].iloc[-1]
     curr_lower = df['bb_lower'].iloc[-1]
 
-    breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
-    breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
+    #breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
+    breakout_up = curr_close > prev_close
+    
+    #breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
+    breakout_down = prev_close > curr_close
     return breakout_up, breakout_down
 
 
@@ -365,29 +368,29 @@ def main_loop():
 
             # ---- Tiered take profit ----
             elif position == 'LONG' and status is None and pnl >= 4.0:
-                take_profit(220)
+                take_profit(30)
                 status = 'TP1'
             elif position == 'LONG' and status == 'TP1' and pnl >= 8.0:
-                take_profit(50)
+                take_profit(5)
                 status = 'TP2'
             elif position == 'LONG' and status == 'TP2' and pnl >= 12.0:
-                take_profit(40)
+                take_profit(3)
                 status = 'TP3'
             elif position == 'LONG' and status == 'TP3' and pnl >= 16.0:
-                take_profit(20)
+                take_profit(2)
                 status = None
 
             elif position == 'SHORT' and status is None and pnl >= 4.0:
-                take_profit(220)
+                take_profit(30)
                 status = 'TP1'
             elif position == 'SHORT' and status == 'TP1' and pnl >= 8.0:
-                take_profit(50)
+                take_profit(5)
                 status = 'TP2'
             elif position == 'SHORT' and status == 'TP2' and pnl >= 12.0:
-                take_profit(40)
+                take_profit(3)
                 status = 'TP3'
             elif position == 'SHORT' and status == 'TP3' and pnl >= 16.0:
-                take_profit(20)
+                take_profit(2)
                 status = None
 
             # ---- Log ----
