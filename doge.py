@@ -643,6 +643,10 @@ def main_loop():
                         df['high'], df['low'], df['close'], lookback, multiplier
                     )
 
+                    df_4['supertrend'], df_4['uptrend'], df_4['downtrend'] = calculate_supertrend(
+                        df_4['high'], df_4['low'], df_4['close'], lookback, multiplier
+                    )
+
                     # Определяем текущий тренд
                     last_row = df.iloc[-1]
                     if last_row['close'] > last_row['supertrend']:
@@ -651,6 +655,15 @@ def main_loop():
                     else:
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
+
+                    # Определяем текущий тренд 4h
+                    last_row_4h = df_4h.iloc[-1]
+                    if last_row_4h['close'] > last_row_4h['supertrend']:
+                        print(f"\nТекущий тренд: ВОСХОДЯЩИЙ (цена {last_row_4h['close']} > SuperTrend {last_row_4h['supertrend']})")
+                        trend_4h = "Long"
+                    else:
+                        print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row_4h['close']} < SuperTrend {last_row_4h['supertrend']})")
+                        trend_4h = "Short"
 
                     # ====== STOP LOSS 4% ======
                     #if position == 'LONG' and pnl <= -4.0:
@@ -665,7 +678,7 @@ def main_loop():
                     # LONG position logic
                     #if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
 
-                    if position != 'LONG' and trend == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
+                    if position != 'LONG' and trend == "Long" and trend_4h == "Long" and stoch_k[-1] > 80: # and ema_100 < trend_value and stoch_k > 80 
                         close_position('BUY')
                         execute_trade('BUY')
                         #status = "Long"
@@ -692,7 +705,7 @@ def main_loop():
                     # SHORT position logic
                     #elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
 
-                    elif position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+                    elif position != 'SHORT' and trend == "Short" and trend_4h == "Short" and stoch_k[-1] < 20:
                         close_position('SELL')
                         execute_trade('SELL')
                         #status = "Short"

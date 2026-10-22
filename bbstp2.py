@@ -8,8 +8,8 @@ import os
 
 
 # ==================== API TOKENS ====================
-API_KEY = os.environ.get('BYBIT_KEY', '2eXDe221sTedNqwSFz')
-API_SECRET = os.environ.get('BYBIT_SECRET', 'a8m7XsSTJOu1PXcj1bs4rN41qIWMPuoBmQVs')
+API_KEY = os.environ.get('BYBIT_KEY', '7n5r7T01c8DLA8pDOD')
+API_SECRET = os.environ.get('BYBIT_SECRET', 'hdunJbpGb5WBa5IaDGtqELV6RZMgASP8Nuya')
 
 TELEGRAM_BOT_TOKEN = os.environ.get('TG_TOKEN', '8968569374:AAGW76iTBj-dcA6hmQ3EgkO5pwbExNAuijA')
 TELEGRAM_CHAT_ID = os.environ.get('TG_CHAT_ID', '5650732610')

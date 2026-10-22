@@ -642,6 +642,10 @@ def main_loop():
                         df['high'], df['low'], df['close'], lookback, multiplier
                     )
 
+                    df_4['supertrend'], df_4['uptrend'], df_4['downtrend'] = calculate_supertrend(
+                        df_4['high'], df_4['low'], df_4['close'], lookback, multiplier
+                    )
+
                     # Определяем текущий тренд
                     last_row = df.iloc[-1]
                     if last_row['close'] > last_row['supertrend']:
@@ -650,6 +654,16 @@ def main_loop():
                     else:
                         print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row['close']} < SuperTrend {last_row['supertrend']})")
                         trend = "Short"
+
+                     # Определяем текущий тренд 4h
+                    last_row_4h = df_4h.iloc[-1]
+                    if last_row_4h['close'] > last_row_4h['supertrend']:
+                        print(f"\nТекущий тренд: ВОСХОДЯЩИЙ (цена {last_row_4h['close']} > SuperTrend {last_row_4h['supertrend']})")
+                        trend_4h = "Long"
+                    else:
+                        print(f"\nТекущий тренд: НИСХОДЯЩИЙ (цена {last_row_4h['close']} < SuperTrend {last_row_4h['supertrend']})")
+                        trend_4h = "Short"
+
                     # ====== STOP LOSS 4% ======
                     # if position == 'LONG' and pnl <= -25.0:
                     #     stop_loss()
@@ -664,30 +678,30 @@ def main_loop():
                     # LONG position logic                    
                     # if crossover and position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
 
-                    if position != 'LONG' and trend == "Long" and stoch_k[-1] > 80:
+                    if position != 'LONG' and trend == "Long" and trend_4h == "Long" and stoch_k[-1] > 80:
                         close_position('BUY')
                         execute_trade('BUY')
                         #status = "Long"
                         send_telegram_alert(rsi_2)
                             
                     elif position == 'LONG' and status == None and pnl >= 5.0:
-                        take_profit(qty=20)
+                        take_profit(qty=30)
                         status = 'FIRST_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
-                        take_profit(qty=7)
+                        take_profit(qty=5)
                         status = 'SECOND_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
-                        take_profit(qty=6)
+                        take_profit(qty=4)
                         status = 'THIRD_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
-                        take_profit(qty=5)
+                        take_profit(qty=2)
                         status = 'FOURTH_TAKE_PROFIT'
 
                     elif position == 'LONG' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
-                        take_profit(qty=4)
+                        take_profit(qty=1)
                         status = None
 
 
@@ -695,31 +709,31 @@ def main_loop():
                     # SHORT position logic                    
                     # elif crossunder and position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
 
-                    elif position != 'SHORT' and trend == "Short" and stoch_k[-1] < 20:
+                    elif position != 'SHORT' and trend == "Short" and trend_4h == "Short" and stoch_k[-1] < 20:
                         close_position('SELL')
                         execute_trade('SELL')
                         #status = "Short"
                         send_telegram_alert(rsi_2)
                             
                     elif position == 'SHORT' and status == None and pnl >= 5.0:
-                        take_profit(qty=20)
+                        take_profit(qty=30)
                         status = 'FIRST_TAKE_PROFIT'
 
                     
                     elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 10.0:
-                        take_profit(qty=7)
+                        take_profit(qty=5)
                         status = 'SECOND_TAKE_PROFIT'
 
                     elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 15.0:
-                        take_profit(qty=6)
+                        take_profit(qty=4)
                         status = 'THIRD_TAKE_PROFIT'
 
                     elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 20.0:
-                        take_profit(qty=5)
+                        take_profit(qty=2)
                         status = 'FOURTH_TAKE_PROFIT'
 
                     elif position == 'SHORT' and status == 'FOURTH_TAKE_PROFIT' and pnl >= 25.0:
-                        take_profit(qty=4)
+                        take_profit(qty=1)
                         status = None
 
 

@@ -295,6 +295,33 @@ def check_bb_breakout(df):
     breakout_down = prev_close > curr_close
     return breakout_up, breakout_down
 
+def stop_loss():
+    """Закрытие текущей позиции по стоп-лоссу"""
+    global position
+
+    try:
+        params = {
+            "category": "linear",
+            "symbol": symbol,
+            "orderType": "Market",
+            "qty": str(qty),
+            "timeInForce": "GTC",
+            "reduceOnly": True
+        }
+
+        if position == 'LONG':
+            print(f"{datetime.now()} - STOP LOSS {qty} USDT")
+            session.place_order(**params, side="Sell")
+            position = 'LONG'
+
+        elif position == 'SHORT':
+            print(f"{datetime.now()} - STOP LOSS {qty} USDT")
+            session.place_order(**params, side="Buy")
+            position = 'SHORT'
+
+    except Exception as e:
+        print(f"Stop loss error: {str(e)}")
+
 
 def send_telegram_alert(trend, adx_val, bb_width):
     try:
@@ -357,13 +384,23 @@ def main_loop():
                 send_telegram_alert(trend, adx_val, bb_width)
 
             # ---- Supertrend flip => close on opposite side ----
-            elif position == 'LONG' and trend == "Short":
-                close_position('SELL')
-                status = None
+            #elif position == 'LONG' and trend == "Short":
+                #close_position('SELL')
+                #status = None
 
-            elif position == 'SHORT' and trend == "Long":
-                close_position('BUY')
-                status = None
+            #elif position == 'SHORT' and trend == "Long":
+                #close_position('BUY')
+                #status = None
+
+            # ====== STOP LOSS 4% ======
+            if position == 'LONG' and pnl <= -40.0:
+                stop_loss()
+                send_telegram_alert(adx_val)
+                        
+            elif position == 'SHORT' and pnl <= -40.0:
+                stop_loss()
+                send_telegram_alert(adx_val)
+            # ==========================
             
 
             # ---- Tiered take profit ----
