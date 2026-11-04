@@ -20,7 +20,9 @@ session = HTTP(api_key=API_KEY, api_secret=API_SECRET)
 
 # ==================== STRATEGY PARAMS ====================
 symbol = 'MNTUSDT'
-timeframe = 60            # H1 (1 час) — рекомендованный ТФ
+timeframe = 60           # H1 (1 час) — рекомендованный ТФ
+timeframe_htf = 240      # H4
+
 qty = 40
 
 # Bollinger Bands
@@ -37,18 +39,25 @@ ADX_THRESHOLD = 10        # Вход только при ADX > 25
 
 position = None
 status = None
+min_macd_dif = 0.0002
 
 
-# ==================== DATA ====================
-def get_historical_data():
+last_close_time = None
+COOLDOWN_SECONDS = 10 * timeframe * 60   # 10 свечей
+
+
+def get_historical_data(interval=None, limit=200):
+    """Универсальная загрузка свечей. interval по умолчанию = timeframe (H1)."""
+    if interval is None:
+        interval = timeframe
     resp = session.get_kline(
         category="linear",
         symbol=symbol,
-        interval=timeframe,
-        limit=200
+        interval=interval,
+        limit=limit
     )
     if not resp or 'result' not in resp or 'list' not in resp['result']:
-        print("Error: No data received from API")
+        print(f"Error: No data received for interval {interval}")
         return None
 
     df = pd.DataFrame(resp['result']['list'], columns=[
@@ -161,6 +170,73 @@ def take_profit(amount):
 
 
 # ==================== INDICATORS ====================
+"""
+MACD
+"""
+def calculate_macd(df):
+    if df is None or len(df) < 50:
+        print("Not enough data for MACD calculation")
+        return None
+    
+    df['EMA12'] = df['close'].ewm(span=12, adjust=False).mean()
+    df['EMA26'] = df['close'].ewm(span=26, adjust=False).mean()
+    df['MACD'] = df['EMA12'] - df['EMA26']
+    df['Signal'] = df['MACD'].ewm(span=9, adjust=False).mean()
+    return df
+
+def check_crossover(df):
+    global min_macd_dif
+    if df is None or len(df) < 3:
+        return False, False
+    
+    prev_macd = df['MACD'].iloc[-3]
+    prev_signal = df['Signal'].iloc[-3]   
+    mid_macd = df['MACD'].iloc[-2]
+    mid_signal = df['Signal'].iloc[-2]   
+    current_macd = df['MACD'].iloc[-1]
+    current_signal = df['Signal'].iloc[-1]
+
+    hist = current_macd - current_signal
+    hist_above_zero = hist >= 0
+    hist_under_zero = hist <= 0
+
+    above_zero = current_macd > 0 and current_signal > 0
+    under_zero = current_macd < 0 and current_signal < 0
+    print(above_zero)
+    print(under_zero)
+    
+    if above_zero:
+        crossover = (
+            #prev_macd < prev_signal and 
+            current_macd > current_signal and
+            (current_macd - current_signal) >= min_macd_dif
+        )
+        crossunder = (
+            #prev_macd > prev_signal and 
+            current_macd < current_signal and
+            (current_signal - current_macd) >= min_macd_dif
+        )
+        print('above')
+    elif under_zero:
+        min_macd_dif = -min_macd_dif
+        crossover = (
+            #prev_macd < prev_signal and 
+            current_macd > current_signal and
+            (current_macd - current_signal) >= min_macd_dif
+        )
+        crossunder = (
+            #prev_macd > prev_signal and 
+            current_macd < current_signal and
+            (current_signal - current_macd) >= min_macd_dif
+        )
+        print('under')
+    else:
+        crossover = None
+        crossunder = None
+
+    return crossover, crossunder
+
+
 def calculate_bollinger_bands(df, period=BB_PERIOD, num_std=BB_STD):
     df['bb_middle'] = df['close'].rolling(window=period).mean()
     df['bb_std'] = df['close'].rolling(window=period).std()
@@ -218,6 +294,16 @@ def calculate_supertrend(high, low, close, lookback=ST_LOOKBACK, multiplier=ST_M
             else:
                 supertrend.iloc[i] = supertrend.iloc[i - 1]
     return supertrend
+
+def get_trend_from_supertrend(df, st_values):
+    """Возвращает 'Long' / 'Short' / None по последней закрытой свече."""
+    if df is None or len(df) < ST_LOOKBACK + 5:
+        return None
+    last_close = df['close'].iloc[-1]
+    last_st = st_values.iloc[-1]
+    if pd.isna(last_st):
+        return None
+    return "Long" if last_close > last_st else "Short"
 
 
 def calculate_adx(df, period=ADX_PERIOD):
@@ -288,11 +374,11 @@ def check_bb_breakout(df):
     curr_upper = df['bb_upper'].iloc[-1]
     curr_lower = df['bb_lower'].iloc[-1]
 
-    #breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
-    breakout_up = curr_close > prev_close
+    breakout_up = (prev_close <= prev_upper) and (curr_close > curr_upper)
+    #breakout_up = curr_close > prev_close
     
-    #breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
-    breakout_down = prev_close > curr_close
+    breakout_down = (prev_close >= prev_lower) and (curr_close < curr_lower)
+    #breakout_down = prev_close > curr_close
     return breakout_up, breakout_down
 
 def stop_loss():
@@ -341,7 +427,8 @@ def send_telegram_alert(trend, adx_val, bb_width):
 
 # ==================== MAIN ====================
 def main_loop():
-    global position, status
+    global position, status, last_close_time, min_macd_dif
+
 
     position = get_current_position()
     print(f"Initial position: {position}")
@@ -362,49 +449,84 @@ def main_loop():
             minus_di = adx_df['minus_di'].iloc[-1]
             bb_width = df['bb_width'].iloc[-1]
 
-            last = df.iloc[-1]
-            trend = "Long" if last['close'] > last['supertrend'] else "Short"
-
+            trend = get_trend_from_supertrend(df, df['supertrend'])
+            
+            # ---- H4 данные (фильтр старшего ТФ) ----
+            df_4h = get_historical_data(interval=timeframe_htf)
+            
+            macd_4h = calculate_macd(df_4h)
+            
+            crossover, crossunder = check_crossover(macd_4h)
+            
+            trend_4h = None
+            if df_4h is not None:
+                st_4h = calculate_supertrend(df_4h['high'], df_4h['low'], df_4h['close'])
+                trend_4h = get_trend_from_supertrend(df_4h, st_4h)
+            
+            # ---- Сигналы BB ----
             breakout_up, breakout_down = check_bb_breakout(df)
-
+            
+            # ---- PnL ----
             pnl = get_unrealized_pnl_percentage()
-
+            
+            
+            # ---- Сигналы BB ----
+            breakout_up, breakout_down = check_bb_breakout(df)
+            
+            # ---- PnL ----
+            pnl = get_unrealized_pnl_percentage()
+            
             adx_ok = (adx_val is not None) and not pd.isna(adx_val) and (adx_val > ADX_THRESHOLD)
-
-            # ---- LONG entry ----
-            if breakout_up and position != 'LONG' and trend == "Long" and adx_ok:
+            
+            in_cooldown = (
+                last_close_time is not None
+                and (time.time() - last_close_time) < COOLDOWN_SECONDS
+            )
+            
+            # ---- Согласие трендов 1H и 4H ----
+            trend_aligned_long = (trend == "Long") and (trend_4h == "Long")
+            trend_aligned_short = (trend == "Short") and (trend_4h == "Short")
+            
+            # ---- Supertrend flip => close on opposite side ----
+            if position == 'LONG' and trend == "Short":
+                close_position('SELL')
+                status = None
+                position = None
+                                    
+            elif position == 'SHORT' and trend == "Long":
+                close_position('BUY')
+                status = None
+                position = None
+            
+            # ============ ENTRY ============
+            if crossover and breakout_up and position != 'LONG' and adx_ok and not in_cooldown:
                 close_position('BUY')
                 execute_trade('BUY')
-                send_telegram_alert(trend, adx_val, bb_width)
-
-            # ---- SHORT entry ----
-            elif breakout_down and position != 'SHORT' and trend == "Short" and adx_ok:
+                send_telegram_alert(trend, trend_4h, adx_val, bb_width)
+            
+            elif crossunder and breakout_down and position != 'SHORT' and adx_ok and not in_cooldown:
                 close_position('SELL')
                 execute_trade('SELL')
-                send_telegram_alert(trend, adx_val, bb_width)
-
-            # ---- Supertrend flip => close on opposite side ----
-            #elif position == 'LONG' and trend == "Short":
-                #close_position('SELL')
-                #status = None
-
-            #elif position == 'SHORT' and trend == "Long":
-                #close_position('BUY')
-                #status = None
+                send_telegram_alert(trend, trend_4h, adx_val, bb_width)
+            
 
             # ====== STOP LOSS 4% ======
-            if position == 'LONG' and pnl <= -40.0:
-                stop_loss()
-                send_telegram_alert(adx_val)
+            # if position == 'LONG' and pnl <= -40.0:
+            #     stop_loss()
+            #     status = None
+            #     position = None
+            #     send_telegram_alert(trend, adx_val, bb_width)
                         
-            elif position == 'SHORT' and pnl <= -40.0:
-                stop_loss()
-                send_telegram_alert(adx_val)
+            # elif position == 'SHORT' and pnl <= -40.0:
+            #     stop_loss()
+            #     status = None
+            #     position = None
+            #     send_telegram_alert(trend, adx_val, bb_width)
             # ==========================
             
 
             # ---- Tiered take profit ----
-            elif position == 'LONG' and status is None and pnl >= 4.0:
+            elif breakout_up and position != 'LONG' and trend_aligned_long and adx_ok and not in_cooldown:
                 take_profit(30)
                 status = 'TP1'
             elif position == 'LONG' and status == 'TP1' and pnl >= 8.0:
@@ -413,11 +535,17 @@ def main_loop():
             elif position == 'LONG' and status == 'TP2' and pnl >= 12.0:
                 take_profit(3)
                 status = 'TP3'
+            # elif position == 'LONG' and status == 'TP3' and pnl >= 16.0:
+            #     take_profit(2)
+            #     status = None
             elif position == 'LONG' and status == 'TP3' and pnl >= 16.0:
                 take_profit(2)
+                position = None          # сразу! позиция уже 0 на бирже
                 status = None
+                last_close_time = time.time()
+                send_telegram_alert(trend, adx_val, bb_width)
 
-            elif position == 'SHORT' and status is None and pnl >= 4.0:
+            elif breakout_down and position != 'SHORT' and trend_aligned_short and adx_ok and not in_cooldown:
                 take_profit(30)
                 status = 'TP1'
             elif position == 'SHORT' and status == 'TP1' and pnl >= 8.0:
@@ -426,19 +554,26 @@ def main_loop():
             elif position == 'SHORT' and status == 'TP2' and pnl >= 12.0:
                 take_profit(3)
                 status = 'TP3'
-            elif position == 'SHORT' and status == 'TP3' and pnl >= 16.0:
+            # elif position == 'SHORT' and status == 'TP3' and pnl >= 16.0:
+            #     take_profit(2)
+            #     status = None
+                
+            elif position == 'LONG' and status == 'TP3' and pnl >= 16.0:
                 take_profit(2)
+                position = None          # сразу! позиция уже 0 на бирже
                 status = None
+                last_close_time = time.time()
+                send_telegram_alert(trend, adx_val, bb_width)
 
             # ---- Log ----
             print(f"\n{datetime.now()} | {symbol}")
-            print(f"Position: {position} | Trend: {trend}")
-            print(f"Close: {last['close']:.5f} | ST: {last['supertrend']:.5f}")
-            print(f"BB up: {last['bb_upper']:.5f} | BB low: {last['bb_lower']:.5f} | width: {bb_width:.5f}")
+            print(f"Position: {position} | Trend 1H: {trend} | Trend 4H: {trend_4h}")
+            print(f"Aligned: Long={trend_aligned_long} Short={trend_aligned_short} | Cooldown: {in_cooldown}")
+            print(f"Close: {df['close'].iloc[-1]:.5f} | ST: {df['supertrend'].iloc[-1]:.5f}")
+            print(f"BB up: {df['bb_upper'].iloc[-1]:.5f} | BB low: {df['bb_lower'].iloc[-1]:.5f} | width: {bb_width:.5f}")
             print(f"ADX: {adx_val:.2f} | +DI: {plus_di:.2f} | -DI: {minus_di:.2f} | PnL: {pnl:.2f}%")
             print(f"Signals: breakUp={breakout_up} breakDown={breakout_down}")
-
-            time.sleep(1)
+            time.sleep(10)
 
         except KeyboardInterrupt:
             print("Stopped by user")
