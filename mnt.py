@@ -398,15 +398,17 @@ def main_loop():
                 take_profit(30)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(5)
+                take_profit(7)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
                 take_profit(3)
-                status = 'THIRD_TAKE_PROFIT'
-            elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(2)
+                #status = 'THIRD_TAKE_PROFIT'
                 status = None
                 position = None
+            #elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                #take_profit(2)
+                #status = None
+                #position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
@@ -422,15 +424,17 @@ def main_loop():
                 take_profit(30)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(5)
+                take_profit(7)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
                 take_profit(3)
-                status = 'THIRD_TAKE_PROFIT'
-            elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(2)
+                #status = 'THIRD_TAKE_PROFIT'
                 status = None
                 position = None
+            #elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                #take_profit(2)
+                #status = None
+                #position = None
 
             # ====== Вывод состояния ======
             print(f"\n{datetime.now()}")
