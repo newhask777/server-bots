@@ -425,10 +425,10 @@ def main_loop():
                 take_profit(400)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(300)
+                take_profit(200)
                 status = 'THIRD_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(200)
+                take_profit(100)
                 status = None
                 position = None
 
