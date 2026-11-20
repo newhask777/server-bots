@@ -387,8 +387,8 @@ def main_loop():
             # ====== LONG ======
             elif (position != 'LONG'
                   and cross_up_1h
-                  #and st_1h == 'GREEN'
-                  #and macd_state == 'BULL'
+                  and st_1h == 'GREEN'
+                  and macd_state == 'BULL'
                 ):
                 close_position('SELL')
                 execute_trade('BUY')
@@ -406,7 +406,7 @@ def main_loop():
                 status = 'THIRD_TAKE_PROFIT'
                 # status = None
                 # position = None
-            elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 40.0:
+            elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 99.0:
                 take_profit(1)
                 status = None
                 position = None
@@ -414,8 +414,8 @@ def main_loop():
             # ====== SHORT ======
             elif (position != 'SHORT'
                   and cross_down_1h
-                  #and st_1h == 'RED'
-                  #and macd_state == 'BEAR'
+                  and st_1h == 'RED'
+                  and macd_state == 'BEAR'
                 ):
                 close_position('BUY')
                 execute_trade('SELL')
@@ -433,7 +433,7 @@ def main_loop():
                 status = 'THIRD_TAKE_PROFIT'
                 # status = None
                 # position = None
-            elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 40.0:
+            elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 99.0:
                 take_profit(1)
                 status = None
                 position = None

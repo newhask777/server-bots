@@ -401,12 +401,14 @@ def main_loop():
                 take_profit(400)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(200)
-                status = 'THIRD_TAKE_PROFIT'
-            elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(100)
+                take_profit(300)
+                #status = 'THIRD_TAKE_PROFIT'
                 status = None
                 position = None
+            # elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+            #     take_profit(100)
+            #     status = None
+            #     position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
@@ -425,12 +427,14 @@ def main_loop():
                 take_profit(400)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(200)
-                status = 'THIRD_TAKE_PROFIT'
-            elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(100)
+                take_profit(300)
+                #status = 'THIRD_TAKE_PROFIT'
                 status = None
                 position = None
+            # elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+            #     take_profit(100)
+            #     status = None
+            #     position = None
 
             # ====== Вывод состояния ======
             print(f"\n{datetime.now()}")
