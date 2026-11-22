@@ -338,6 +338,18 @@ def send_telegram_alert(df_1h, df_4h, st_1h, macd_state):
         bot.send_message(TELEGRAM_CHAT_ID, message, parse_mode='Markdown')
     except Exception as e:
         print(f"Telegram send error: {e}")
+        
+def send_telegram_alert_signal(cross):
+    try:
+        message = (
+            f"📊 *Trade Signal*\n"
+            f"Time: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
+            f"Symbol: *{symbol}*\n"
+            f"4H MACD state: Cross Signal: `{cross}`\n"
+        )
+        bot.send_message(TELEGRAM_CHAT_ID, message, parse_mode='Markdown')
+    except Exception as e:
+        print(f"Telegram send error: {e}")
 
 
 # ---------- Основной цикл ----------
@@ -368,20 +380,32 @@ def main_loop():
             # --- 4H: MACD ---
             df_4h = calculate_macd(df_4h)
             macd_state = get_macd_state(df_4h)  # BULL / BEAR
-
+            #send_telegram_alert_signal(macd_state)
+            
             # Если нужен именно свежий крест MACD на 4H — раскомментируйте:
-            # macd_cross_up_4h, macd_cross_down_4h = check_macd_cross(df_4h)
+            macd_cross_up_4h, macd_cross_down_4h = check_macd_cross(df_4h)
             # и в условиях ниже замените macd_state == 'BULL' на macd_cross_up_4h,
             # macd_state == 'BEAR' на macd_cross_down_4h
+            
+            if macd_cross_up_4h:
+                macd_cross = "MACD CROSS UP"
+                send_telegram_alert_signal(macd_cross)
+            elif macd_cross_down_4h:
+                macd_cross = "MACD CROSS DOWN"
+                send_telegram_alert_signal(macd_cross)
 
             pnl = get_unrealized_pnl_percentage() or 0.0
 
             # ====== STOP LOSS ======
             if position == 'LONG' and pnl <= stop_loss_pct:
                 stop_loss()
+                position = None
+                status = None
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
             elif position == 'SHORT' and pnl <= stop_loss_pct:
                 stop_loss()
+                position = None
+                status = None
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
 
             # ====== LONG ======

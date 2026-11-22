@@ -416,9 +416,13 @@ def main_loop():
             # ====== STOP LOSS ======
             if position == 'LONG' and pnl <= stop_loss_pct:
                 stop_loss()
+                position = None
+                status = None
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
             elif position == 'SHORT' and pnl <= stop_loss_pct:
                 stop_loss()
+                position = None
+                status = None
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
 
             # ====== LONG ======
