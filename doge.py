@@ -410,6 +410,10 @@ def main_loop():
                 # Совпадение расчётов: BTC EMA25>EMA50 И ST GREEN
                 btc_bull_confirm = btc_ema_bull and st_btc == 'GREEN'
                 btc_bear_confirm = btc_ema_bear and st_btc == 'RED'
+                
+            ema_trend_up = df_1h['ema_fast'].iloc[-2] > df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            ema_trend_down = df_1h['ema_fast'].iloc[-2] < df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            
 
             pnl = get_unrealized_pnl_percentage() or 0.0
 
@@ -427,7 +431,7 @@ def main_loop():
 
             # ====== LONG ======
             elif (position != 'LONG'
-                  and cross_up_1h
+                  and ema_trend_up
                   and st_1h == 'GREEN'
                   and macd_state == 'BULL'
                   and btc_bull_confirm):          # NEW: BTC подтверждает
@@ -452,7 +456,7 @@ def main_loop():
 
             # ====== SHORT ======
             elif (position != 'SHORT'
-                  and cross_down_1h
+                  and ema_trend_down
                   and st_1h == 'RED'
                   and macd_state == 'BEAR'
                   and btc_bear_confirm):          # NEW: BTC подтверждает

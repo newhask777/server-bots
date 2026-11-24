@@ -22,9 +22,9 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 session = HTTP(api_key=API_KEY, api_secret=API_SECRET)
 
 # Position settings
-symbol = 'DOGEUSDT'
+symbol = 'PUMPFUNUSDT'
 timeframe = 60
-qty = 330
+qty = 2500
 
 # EMA params (1H)
 ema_fast = 25
@@ -375,6 +375,10 @@ def main_loop():
             # macd_state == 'BEAR' на macd_cross_down_4h
 
             pnl = get_unrealized_pnl_percentage() or 0.0
+            
+            ema_trend_up = df_1h['ema_fast'].iloc[-2] > df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            ema_trend_down = df_1h['ema_fast'].iloc[-2] < df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            
 
             # ====== STOP LOSS ======
             if position == 'LONG' and pnl <= stop_loss_pct:
@@ -386,7 +390,7 @@ def main_loop():
 
             # ====== LONG ======
             elif (position != 'LONG'
-                  and cross_up_1h
+                  and ema_trend_up
                   and st_1h == 'GREEN'
                   and macd_state == 'BULL'):
                 close_position('SELL')
@@ -395,22 +399,22 @@ def main_loop():
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
 
             elif position == 'LONG' and status is None and pnl >= 4.0:
-                take_profit(240)
+                take_profit(2000)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(60)
+                take_profit(250)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(20)
+                take_profit(150)
                 status = 'THIRD_TAKE_PROFIT'
             elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(10)
+                take_profit(50)
                 status = None
                 position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
-                  and cross_down_1h
+                  and ema_trend_down
                   and st_1h == 'RED'
                   and macd_state == 'BEAR'):
                 close_position('BUY')
@@ -419,16 +423,16 @@ def main_loop():
                 send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
 
             elif position == 'SHORT' and status is None and pnl >= 4.0:
-                take_profit(240)
+                take_profit(2000)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(60)
+                take_profit(250)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(20)
+                take_profit(150)
                 status = 'THIRD_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(10)
+                take_profit(50)
                 status = None
                 position = None
 

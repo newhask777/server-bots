@@ -373,6 +373,10 @@ def main_loop():
             # macd_cross_up_4h, macd_cross_down_4h = check_macd_cross(df_4h)
             # и в условиях ниже замените macd_state == 'BULL' на macd_cross_up_4h,
             # macd_state == 'BEAR' на macd_cross_down_4h
+            
+            ema_trend_up = df_1h['ema_fast'].iloc[-2] > df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            ema_trend_down = df_1h['ema_fast'].iloc[-2] < df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            
 
             pnl = get_unrealized_pnl_percentage() or 0.0
 
@@ -386,7 +390,7 @@ def main_loop():
 
             # ====== LONG ======
             elif (position != 'LONG'
-                  and cross_up_1h
+                  and ema_trend_up
                   and st_1h == 'GREEN'
                   and macd_state == 'BULL'):
                 close_position('SELL')
@@ -410,7 +414,7 @@ def main_loop():
 
             # ====== SHORT ======
             elif (position != 'SHORT'
-                  and cross_down_1h
+                  and ema_trend_down
                   and st_1h == 'RED'
                   and macd_state == 'BEAR'):
                 close_position('BUY')

@@ -22,9 +22,10 @@ bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 session = HTTP(api_key=API_KEY, api_secret=API_SECRET)
 
 # Position settings
-symbol = 'ARBUSDT'
+symbol = 'ATOMUSDT'
+symbol_btc = 'BTCUSDT'          # NEW: Биткоин для подтверждения
 timeframe = 60
-qty = 70
+qty = 10
 
 # EMA params (1H)
 ema_fast = 25
@@ -66,6 +67,22 @@ def get_historical_data_4h():
     resp = session.get_kline(category="linear", symbol=symbol, interval=240, limit=200)
     if not resp or 'result' not in resp or 'list' not in resp['result']:
         print("Error: No data received from API")
+        return None
+    df = pd.DataFrame(resp['result']['list'], columns=[
+        'timestamp', 'open', 'high', 'low', 'close', 'volume', 'turnover'
+    ])
+    df = df[::-1]
+    df['timestamp'] = pd.to_datetime(df['timestamp'].astype(int), unit='ms')
+    for c in ['open', 'high', 'low', 'close', 'volume']:
+        df[c] = df[c].astype(float)
+    return df
+
+
+# NEW: данные по BTC (1H)
+def get_historical_data_btc():
+    resp = session.get_kline(category="linear", symbol=symbol_btc, interval=timeframe, limit=200)
+    if not resp or 'result' not in resp or 'list' not in resp['result']:
+        print("Error: No BTC data received from API")
         return None
     df = pd.DataFrame(resp['result']['list'], columns=[
         'timestamp', 'open', 'high', 'low', 'close', 'volume', 'turnover'
@@ -233,14 +250,12 @@ def calculate_macd(df, fast=macd_fast, slow=macd_slow, signal=macd_signal):
 
 
 def get_macd_state(df):
-    """BULL если MACD > Signal (бычье), иначе BEAR"""
     if df is None or len(df) < 2:
         return None
     return 'BULL' if df['MACD'].iloc[-1] > df['Signal'].iloc[-1] else 'BEAR'
 
 
 def check_macd_cross(df):
-    """Свежее пересечение MACD на последнем баре 4H (если нужен строгий крест)"""
     if df is None or len(df) < 3:
         return False, False
     prev_macd = df['MACD'].iloc[-2]
@@ -320,8 +335,15 @@ def get_supertrend_direction(df):
 
 
 # ---------- Telegram ----------
-def send_telegram_alert(df_1h, df_4h, st_1h, macd_state):
+def send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc=None, btc_bull=None, btc_bear=None):
     try:
+        btc_block = ""
+        if st_btc is not None:
+            btc_block = (
+                f"\n*BTC Confirmation (1H):*\n"
+                f"BTC SuperTrend: `{st_btc}`\n"
+                f"BTC EMA25/50 state: `{'BULL' if btc_bull else ('BEAR' if btc_bear else 'N/A')}`\n"
+            )
         message = (
             f"📊 *Trade Signal*\n"
             f"Time: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`\n"
@@ -334,6 +356,7 @@ def send_telegram_alert(df_1h, df_4h, st_1h, macd_state):
             f"4H MACD: `{df_4h['MACD'].iloc[-1]:.5f}`\n"
             f"4H Signal: `{df_4h['Signal'].iloc[-1]:.5f}`\n"
             f"4H MACD state: `{macd_state}`\n"
+            f"{btc_block}"
         )
         bot.send_message(TELEGRAM_CHAT_ID, message, parse_mode='Markdown')
     except Exception as e:
@@ -351,12 +374,13 @@ def main_loop():
         try:
             df_1h = get_historical_data()
             df_4h = get_historical_data_4h()
+            df_btc = get_historical_data_btc()          # NEW
 
             if df_1h is None or df_4h is None:
                 time.sleep(5)
                 continue
 
-            # --- 1H: EMA + SuperTrend ---
+            # --- 1H: EMA + SuperTrend (DOGE) ---
             df_1h = add_ema(df_1h, ema_fast, ema_slow)
             cross_up_1h, cross_down_1h = check_ema_cross(df_1h)
 
@@ -365,70 +389,95 @@ def main_loop():
             )
             st_1h = get_supertrend_direction(df_1h)
 
-            # --- 4H: MACD ---
+            # --- 4H: MACD (DOGE) ---
             df_4h = calculate_macd(df_4h)
             macd_state = get_macd_state(df_4h)  # BULL / BEAR
 
-            # Если нужен именно свежий крест MACD на 4H — раскомментируйте:
-            # macd_cross_up_4h, macd_cross_down_4h = check_macd_cross(df_4h)
-            # и в условиях ниже замените macd_state == 'BULL' на macd_cross_up_4h,
-            # macd_state == 'BEAR' на macd_cross_down_4h
+            # --- NEW: BTC 1H EMA + SuperTrend (подтверждение) ---
+            st_btc = None
+            btc_ema_bull = False
+            btc_ema_bear = False
+            btc_bull_confirm = False
+            btc_bear_confirm = False
+            if df_btc is not None and len(df_btc) >= 2:
+                df_btc = add_ema(df_btc, ema_fast, ema_slow)
+                df_btc['supertrend'], df_btc['uptrend'], df_btc['downtrend'] = calculate_supertrend(
+                    df_btc['high'], df_btc['low'], df_btc['close'], st_lookback, st_multiplier
+                )
+                st_btc = get_supertrend_direction(df_btc)
+                btc_ema_bull = df_btc['ema_fast'].iloc[-1] > df_btc['ema_slow'].iloc[-1]
+                btc_ema_bear = df_btc['ema_fast'].iloc[-1] < df_btc['ema_slow'].iloc[-1]
+                # Совпадение расчётов: BTC EMA25>EMA50 И ST GREEN
+                btc_bull_confirm = btc_ema_bull and st_btc == 'GREEN'
+                btc_bear_confirm = btc_ema_bear and st_btc == 'RED'
 
             pnl = get_unrealized_pnl_percentage() or 0.0
+            
+            ema_trend_up = df_1h['ema_fast'].iloc[-2] > df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+            ema_trend_down = df_1h['ema_fast'].iloc[-2] < df_1h['ema_slow'].iloc[-2] # Желтая ниже синей
+
 
             # ====== STOP LOSS ======
             if position == 'LONG' and pnl <= stop_loss_pct:
                 stop_loss()
-                send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
+                position = None
+                status = None
+                send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
             elif position == 'SHORT' and pnl <= stop_loss_pct:
                 stop_loss()
-                send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
+                position = None
+                status = None
+                send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
 
             # ====== LONG ======
             elif (position != 'LONG'
-                  and cross_up_1h
+                  and ema_trend_up
                   and st_1h == 'GREEN'
-                  and macd_state == 'BULL'):
+                  and macd_state == 'BULL'
+                  #and btc_bull_confirm
+                  ):          # NEW: BTC подтверждает
                 close_position('SELL')
                 execute_trade('BUY')
                 status = None
-                send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
+                send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
 
             elif position == 'LONG' and status is None and pnl >= 4.0:
-                take_profit(40)
+                take_profit(6)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(15)
+                take_profit(2)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(10)
+                take_profit(1)
                 status = 'THIRD_TAKE_PROFIT'
             elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(5)
+                take_profit(1)
                 status = None
                 position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
-                  and cross_down_1h
+                  and ema_trend_down
                   and st_1h == 'RED'
-                  and macd_state == 'BEAR'):
+                  and macd_state == 'BEAR'
+                  #and btc_bear_confirm
+                  ):          # NEW: BTC подтверждает
                 close_position('BUY')
                 execute_trade('SELL')
                 status = None
-                send_telegram_alert(df_1h, df_4h, st_1h, macd_state)
+                send_telegram_alert(df_1h, df_4h, st_1h, macd_state, st_btc, btc_ema_bull, btc_ema_bear)
 
             elif position == 'SHORT' and status is None and pnl >= 4.0:
-                take_profit(40)
+                take_profit(6)
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
-                take_profit(15)
+                take_profit(2)
                 status = 'SECOND_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-                take_profit(10)
+                take_profit(1)
                 status = 'THIRD_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-                take_profit(5)
+                take_profit(1)
                 status = None
                 position = None
 
@@ -443,6 +492,12 @@ def main_loop():
             print(f"4H MACD: {df_4h['MACD'].iloc[-1]:.5f} | Signal: {df_4h['Signal'].iloc[-1]:.5f}")
             print(f"4H MACD state: {macd_state}")
             print(f"Last close: {df_1h['close'].iloc[-1]:.5f}")
+            if df_btc is not None and len(df_btc) >= 2:
+                print(f"--- BTC confirmation ---")
+                print(f"BTC EMA{ema_fast}: {df_btc['ema_fast'].iloc[-1]:.2f} | EMA{ema_slow}: {df_btc['ema_slow'].iloc[-1]:.2f}")
+                print(f"BTC SuperTrend: {st_btc}")
+                print(f"BTC EMA state: {'BULL' if btc_ema_bull else 'BEAR'}")
+                print(f"BTC confirm LONG: {btc_bull_confirm} | SHORT: {btc_bear_confirm}")
 
             time.sleep(5)
 
