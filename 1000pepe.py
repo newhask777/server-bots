@@ -415,7 +415,7 @@ def main_loop():
                 take_profit(300)
                 #status = 'THIRD_TAKE_PROFIT'
                 status = None
-                position = None
+                #position = None
             # elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
             #     take_profit(100)
             #     status = None
@@ -443,7 +443,7 @@ def main_loop():
                 take_profit(300)
                 #status = 'THIRD_TAKE_PROFIT'
                 status = None
-                position = None
+                #position = None
             # elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
             #     take_profit(100)
             #     status = None

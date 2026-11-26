@@ -195,7 +195,7 @@ def stop_loss():
         elif position == 'SHORT':
             print(f"{datetime.now()} - STOP LOSS {qty} USDT")
             session.place_order(**params, side="Buy")
-        position = None
+        #position = None
         status = None
     except Exception as e:
         print(f"Stop loss error: {str(e)}")
@@ -413,7 +413,7 @@ def main_loop():
             elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 99.0:
                 take_profit(1)
                 status = None
-                position = None
+                #position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
@@ -440,7 +440,7 @@ def main_loop():
             elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 99.0:
                 take_profit(1)
                 status = None
-                position = None
+                #position = None
 
             # ====== Вывод состояния ======
             print(f"\n{datetime.now()}")

@@ -452,7 +452,7 @@ def main_loop():
             elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
                 take_profit(10)
                 status = None
-                position = None
+                #position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
@@ -477,7 +477,7 @@ def main_loop():
             elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
                 take_profit(10)
                 status = None
-                position = None
+                #position = None
 
             # ====== Вывод состояния ======
             print(f"\n{datetime.now()}")

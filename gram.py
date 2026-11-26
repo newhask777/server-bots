@@ -24,7 +24,7 @@ session = HTTP(api_key=API_KEY, api_secret=API_SECRET)
 # Position settings
 symbol = 'GRAMUSDT'
 timeframe = 60
-qty = 10
+qty = 13
 
 # EMA params (1H)
 ema_fast = 25
@@ -403,16 +403,16 @@ def main_loop():
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'LONG' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
                 take_profit(3)
-                #status = 'SECOND_TAKE_PROFIT'
+                status = 'SECOND_TAKE_PROFIT'
+                # status = None
+                # position = None
+            elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
+                take_profit(2)
+                status = 'THIRD_TAKE_PROFIT'
+            elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                take_profit(1)
                 status = None
-                position = None
-            # elif position == 'LONG' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-            #     take_profit(2)
-            #     status = 'THIRD_TAKE_PROFIT'
-            # elif position == 'LONG' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-            #     take_profit(1)
-            #     status = None
-            #     position = None
+                #position = None
 
             # ====== SHORT ======
             elif (position != 'SHORT'
@@ -429,16 +429,16 @@ def main_loop():
                 status = 'FIRST_TAKE_PROFIT'
             elif position == 'SHORT' and status == 'FIRST_TAKE_PROFIT' and pnl >= 8.0:
                 take_profit(3)
-                #status = 'SECOND_TAKE_PROFIT'
+                status = 'SECOND_TAKE_PROFIT'
+                # status = None
+                # position = None
+            elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
+                take_profit(2)
+                status = 'THIRD_TAKE_PROFIT'
+            elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
+                take_profit(1)
                 status = None
-                position = None
-            # elif position == 'SHORT' and status == 'SECOND_TAKE_PROFIT' and pnl >= 12.0:
-            #     take_profit(2)
-            #     status = 'THIRD_TAKE_PROFIT'
-            # elif position == 'SHORT' and status == 'THIRD_TAKE_PROFIT' and pnl >= 16.0:
-            #     take_profit(1)
-            #     status = None
-            #     position = None
+                #position = None
 
             # ====== Вывод состояния ======
             print(f"\n{datetime.now()}")
