@@ -195,7 +195,7 @@ def stop_loss():
         elif position == 'SHORT':
             print(f"{datetime.now()} - STOP LOSS {qty} USDT")
             session.place_order(**params, side="Buy")
-        position = None
+        #position = None
         status = None
     except Exception as e:
         print(f"Stop loss error: {str(e)}")
